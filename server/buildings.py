@@ -20,6 +20,7 @@ import math
 import numpy as np
 
 import fast
+import localbuildings
 import mapgeom
 import staging
 
@@ -428,6 +429,12 @@ def brick_share(lat, lon):
     return region_style(lat, lon).brick
 
 
+def _measured_pitch(attrs, roof):
+    """A measured roof pitch (degrees, localbuildings) for a pitched roof, else None."""
+    p = attrs.get("roof_pitch")
+    return float(min(max(p, 12.0), 50.0)) if p and roof != "flat" else None
+
+
 def roof_pitch(spec):
     """The roof pitch (degrees) of a Spec: its region's, else PITCH."""
     return spec.pitch or PITCH.get(spec.roof, PITCH["gabled"])
@@ -776,7 +783,7 @@ def plan(ring, attrs, neighbours=0, lat=None, lon=None, look=None, town=False, d
     return Spec(ring=ring, floors=nf, floor_h=floor_h, height=h, roof=roof, roof_mat=roof_mat, facade=facade,
                 band=band, shop=shop and not shed and nf >= 1, plain=plain, seed=seed, min_h=0.0, wall=wall,
                 windows=windows, steeple=church and area < 2500, porch=porch, cls=cls,
-                deck=garage and roof == "flat", pitch=style.pitch)
+                deck=garage and roof == "flat", pitch=_measured_pitch(attrs, roof) or style.pitch)
 
 
 class Mesh:
@@ -2316,6 +2323,7 @@ def tile_buildings(frame, x0, y0, x1, y1, layers, elev, water=None, part_layers=
                    "facade_material", "facade_color", "roof_material", "roof_color")}
             if key is not None:         # (plan's random choices keyed on the feature, not where the anchor puts it)
                 at["seed_id"] = str(key)
+                localbuildings.merge(at, key)    # (measured heights, roofs and colours: localbuildings.py)
             hh_ = at.get("height")
             if hh_ is not None and np.isfinite(hh_) and 0 < hh_ < FLAT_FOOTPRINT_M and not parts_of.get(str(key)):
                 continue                # a mapped area, not a building (the Golden Gate toll plaza's 0.01 m footprint
