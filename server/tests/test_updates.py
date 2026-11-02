@@ -82,10 +82,10 @@ class OpenPageTest(unittest.TestCase):
 
     def test_only_the_projects_pages(self):
         calls = []
-        ok = updates.open_page("https://github.com/TecnaGamer/BeamNG.Earth/releases", popen=lambda *a, **k: calls.append(a))
+        ok = updates.open_page("https://github.com/BasedTA/BeamNG.Earth/releases", popen=lambda *a, **k: calls.append(a))
         if updates.sys.platform != "win32":
             self.assertTrue(ok)
-            self.assertEqual(calls[0][0][1], "https://github.com/TecnaGamer/BeamNG.Earth/releases")
+            self.assertEqual(calls[0][0][1], "https://github.com/BasedTA/BeamNG.Earth/releases")
         for bad in ("https://evil.example/x", "https://github.com/someone/else", None, 5,
-                    "https://github.com/TecnaGamer/BeamNG.Earth/releases\" && rm -rf ~"):
+                    "https://github.com/BasedTA/BeamNG.Earth/releases\" && rm -rf ~"):
             self.assertFalse(updates.open_page(bad, popen=lambda *a, **k: calls.append(a)), bad)

@@ -4,7 +4,7 @@
 -- kinds, labels and the URL truncation.
 local M = {}
 
-M.REPO = 'TecnaGamer/BeamNG.Earth'
+M.REPO = 'BasedTA/BeamNG.Earth'
 M.URL_MAX = 7000        -- characters of the whole new-issue URL (GitHub refuses ~8 KB)
 
 -- The kinds the user picks from (order = the window's radio buttons). label = the GitHub label.
