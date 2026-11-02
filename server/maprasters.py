@@ -27,6 +27,7 @@ import numpy as np
 
 import cog as cogmod
 import lidarbc
+import localcanopy
 import rangeread
 
 WORLDCOVER_RELEASE = "v200-2021"
@@ -176,6 +177,25 @@ class Rasters:
             raise cogmod.CogError(f"CHM {qk}: cell not aligned to the file's pixels")
         data = c.read_window(col0, row0, w, w)
         return Raster(data, "EPSG:3857", mx0, my0, c.sx, c.sy, CHM_NODATA, [qk])
+
+    def local_canopy(self, cell, base):
+        """base (the cell's canopy Raster, or None) with the measured canopy of localcanopy.py put in where it
+        covers; (raster, [source id]) or (base, [])."""
+        win = localcanopy.window(cell)
+        if win is None:
+            return base, []
+        x0, y0, px = localcanopy.cell_box(cell)
+        n = win.shape[0]
+        ok = win != localcanopy.NODATA
+        if base is not None and base.data.shape == (n, n) and abs(base.dx - px) < 1e-6:
+            data = base.data.copy()
+            files = list(base.files)
+        else:
+            data = np.full((n, n), CHM_NODATA, np.uint8)
+            files = []
+        data[ok] = win[ok]
+        src = "usgs3dep:" + localcanopy.VERSION
+        return Raster(data, "EPSG:3857", x0, y0, px, px, CHM_NODATA, files + [src]), [src]
 
     def bc_canopy(self, cell, base):
         """base (the Meta / WRI canopy Raster of the cell, or None) with LidarBC's measured canopy heights put in

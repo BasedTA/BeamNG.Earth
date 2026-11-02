@@ -27,6 +27,7 @@ import numpy as np
 
 import fast
 
+import localcanopy
 import mapcells
 import pacer
 import staging
@@ -244,6 +245,8 @@ class Vegetation:
 
     def _path(self, x, y):
         rel = getattr(self.md, "release", "x")
+        if localcanopy.covers(mapcells.CellKey(mapcells.ZOOM, x, y)):    # (measured trees: rebuilt with their data)
+            rel = f"{rel}.{localcanopy.VERSION}"
         return os.path.join(self.dir, str(rel), str(x), f"{y}.npz") if self.dir else None
 
     def _load(self, x, y):

@@ -64,6 +64,7 @@ import geodesy
 import gradesep
 import mapcells
 import mapgeom
+import localcanopy
 import maprasters
 import netfetch
 import overture
@@ -130,6 +131,13 @@ LIDAR_CANOPY = {
                    "(LidarBC); Meta and World Resources Institute (WRI)",
     "licence": "Open Government Licence - British Columbia; CC BY 4.0", "url": "https://lidar.gov.bc.ca",
 }
+USGS_CANOPY = {
+    "id": "usgs3dep-chm", "name": "USGS 3DEP lidar canopy height (localcanopy.py), Meta / WRI elsewhere",
+    "release": "usgs3dep",
+    "attribution": "Canopy height: U.S. Geological Survey 3D Elevation Program lidar; Meta and World Resources "
+                   "Institute (WRI)",
+    "licence": "Public domain (USGS); CC BY 4.0", "url": "https://www.usgs.gov/3d-elevation-program",
+}
 # Short overlay wordings per provenance id (credits.py can take them when the map data is shown)
 CREDIT_LINES = {
     "overture": overture.ATTRIBUTION,
@@ -137,6 +145,7 @@ CREDIT_LINES = {
                       "processed by ESA WorldCover consortium",
     "meta-wri-chm": "Canopy height: Meta & WRI",
     "lidarbc-chm": "Canopy height: LidarBC (OGL-BC), Meta & WRI",
+    "usgs3dep-chm": "Canopy height: USGS 3DEP lidar, Meta & WRI",
 }
 THEME_OF = {name: spec["theme"] for name, spec in overture.LAYERS.items()}
 
@@ -318,6 +327,8 @@ class MapData:
         source, release = _source(layer, self.release)
         lv = LAYER_VERSIONS.get(layer)
         name = layer if lv is None else f"{layer}.{lv}"
+        if layer == "canopy" and localcanopy.covers(key):      # (the measured canopy: its own, versioned cells)
+            name += f".{localcanopy.VERSION}"
         return os.path.join(self.cache_dir, "mapdata", f"v{VERSION}", source, release, name,
                             str(key.z), str(key.x), f"{key.y}.npz")
 
@@ -414,10 +425,13 @@ class MapData:
         else:
             r = self.rasters.canopy(key, kind)
             r, bc_files = self.rasters.bc_canopy(key, r)
+            r, local_files = self.rasters.local_canopy(key, r)
             arrays = _layer_arrays(r)
             prov = dict(CANOPY, files=r.files) if r is not None else None
             if bc_files:
                 prov = dict(LIDAR_CANOPY, files=r.files, also=CANOPY["id"])
+            if local_files:
+                prov = dict(USGS_CANOPY, files=r.files, also=CANOPY["id"])
         arrays["provenance"] = np.array(json.dumps(prov, sort_keys=True))
         return arrays
 
