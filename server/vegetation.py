@@ -350,6 +350,12 @@ class Vegetation:
         blocked |= road
         jj, ii = np.nonzero(tops)
         jj, ii = _thin(jj, ii, hs[jj, ii], chm.dx)     # one top per crown (flat crowns had several)
+        if localcanopy.covers(mapcells.CellKey(mapcells.ZOOM, x, y)):     # measured crowns: fill them (FILL_SPACING)
+            ok = ~blocked & ~curb
+            ok[~rj, :] = False
+            ok[:, ~ci] = False
+            fj, fi = _fill_canopy(hs, jj, ii, ok, chm.dx)
+            jj, ii = np.concatenate([jj, fj]), np.concatenate([ii, fi])
         th = hs[jj, ii]
         tlon, tlat = _to4326(mx[ii], my[jj])
         is_tree = th >= TREE_MIN_M
@@ -528,6 +534,38 @@ def _thin(jj, ii, h, px):
     keep = fast._ef.thin_tops(np.ascontiguousarray(jj, np.int64), np.ascontiguousarray(ii, np.int64),
                               np.ascontiguousarray(h, np.float32), float(CROWN_SPACING), float(px))
     return jj[keep], ii[keep]
+
+
+# Measured canopy (localcanopy.py) is the real crowns, ~10-15 m across for the Piedmont's 18 m hardwoods; one top per
+# crown drawn as a stock tree (~0.12 h + 1 m in radius) covered a third of it (Springside Dr, Clemmons, 2026-11-02: "the
+# trees are too few / too thin"). There the canopy no drawn crown reaches gets more trees, at its own heights, about
+# FILL_SPACING crown radii apart: the woods close up, and the lawns the lidar saw open stay open.
+FILL_SPACING = 1.5
+FILL_STEP_PX = 2            # candidates on this pixel grid (then thinned)
+
+
+def _fill_canopy(hs, jj, ii, ok, px):
+    """(rows, cols) of extra trees: canopy pixels (hs >= TREE_MIN_M where ok) out of reach of the tops (jj, ii)'s
+    drawn crowns, thinned to FILL_SPACING crown radii. Deterministic."""
+    canopy = ok & (hs >= TREE_MIN_M)
+    if not canopy.any():
+        return np.zeros(0, np.int64), np.zeros(0, np.int64)
+    covered = np.zeros(hs.shape, bool)
+    if len(jj):
+        r = np.ceil((0.12 * hs[jj, ii] + 1.0) / px).astype(np.int64)
+        for rr in np.unique(r):
+            m = np.zeros(hs.shape, bool)
+            sel = r == rr
+            m[jj[sel], ii[sel]] = True
+            covered |= _dilate(m, int(rr))
+    grid = np.zeros(hs.shape, bool)
+    grid[::FILL_STEP_PX, ::FILL_STEP_PX] = True
+    cj, ci = np.nonzero(canopy & ~covered & grid)
+    if not len(cj):
+        return cj, ci
+    keep = fast._ef.thin_tops(np.ascontiguousarray(cj, np.int64), np.ascontiguousarray(ci, np.int64),
+                              np.ascontiguousarray(hs[cj, ci], np.float32), float(FILL_SPACING), float(px))
+    return cj[keep], ci[keep]
 
 
 def _empty():

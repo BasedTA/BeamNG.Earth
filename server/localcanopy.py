@@ -14,7 +14,7 @@ import threading
 
 import numpy as np
 
-VERSION = "27012-1"
+VERSION = "27012-2"          # (2: the crowns filled, vegetation._fill_canopy)
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "localcanopy_27012.npz")
 GRID_Z = 25                 # the pixel grid's zoom (maprasters: CHM_FILE_Z + 15)
 BLOCK = 2048                # pixels a block side (one z14 map cell)
