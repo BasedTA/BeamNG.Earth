@@ -105,6 +105,7 @@ FEATURES = {
     "map:USGS Lidar": "USGS Lidar", "map:doi:10.5281/zenodo.8174931": "Shi et al. (East Asia buildings)",
     "land:esa-worldcover": "ESA WorldCover", "canopy:meta-wri-chm": "Meta & WRI",
     "canopy:lidarbc-chm": "LidarBC (OGL-BC)",
+    "canopy:usgs3dep-chm": "USGS 3DEP lidar",
     "sea:noaa": "NOAA NCEI", "bridge:nbi": "FHWA NBI", "bridge:wikidata": "Wikidata",
     "air:ourairports": "OurAirports", "grav:egm2008": "NGA EGM2008", "climate:beck-kg": "Beck et al. (Koppen-Geiger)",
 }
@@ -213,6 +214,9 @@ def feature_ids(conn):
                     ids.add("canopy:meta-wri-chm")
                 elif pid == "lidarbc-chm":
                     ids.add("canopy:lidarbc-chm")
+                elif pid == "usgs3dep-chm":         # (measured trees: localcanopy.py, over Meta / WRI)
+                    ids.add("canopy:usgs3dep-chm")
+                    ids.add("canopy:meta-wri-chm")
                     ids.add("canopy:meta-wri-chm")
     sea = getattr(conn, "sea_sent", None)
     if sea and sea[0] == conn.active and sea[1] and sea[1][0]:
